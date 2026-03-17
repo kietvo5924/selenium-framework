@@ -10,32 +10,58 @@ import org.testng.annotations.Test;
 
 public class LoginDDTTest extends BaseTest {
 
-    // Khai báo nguồn dữ liệu đọc từ Excel [cite: 410-412]
-    @DataProvider(name = "excelLoginData")
-    public Object[][] getLoginDataFromExcel() {
-        String path = "src/test/resources/testdata/login_data.xlsx";
-        // Nhớ tên sheet "LoginCases" phải khớp đúng với tên sheet trong file Excel của bạn
-        return ExcelReader.getData(path, "LoginCases");
+    String excelPath = "src/test/resources/testdata/login_data.xlsx";
+
+    // 1. Data cho nhóm Smoke (Đăng nhập thành công)
+    @DataProvider(name = "smokeData")
+    public Object[][] getSmokeData() {
+        return ExcelReader.getData(excelPath, "SmokeCases");
     }
 
-    // Gắn dataProvider vào test [cite: 413]
-    // Tham số truyền vào hàm phải TƯƠNG ỨNG với số lượng cột trong Excel
-    @Test(dataProvider = "excelLoginData", description = "Kiểm thử đăng nhập bằng dữ liệu từ Excel")
-    public void testLoginFromExcel(String username, String password, String expected, String description) {
-        System.out.println("Đang chạy test case: " + description);
+    // 2. Data cho nhóm Negative (Đăng nhập thất bại)
+    @DataProvider(name = "negativeData")
+    public Object[][] getNegativeData() {
+        return ExcelReader.getData(excelPath, "NegativeCases");
+    }
 
+    // 3. Data cho nhóm Boundary (Kiểm thử biên/ký tự đặc biệt)
+    @DataProvider(name = "boundaryData")
+    public Object[][] getBoundaryData() {
+        return ExcelReader.getData(excelPath, "BoundaryCases");
+    }
+
+    // Test Case 1: Chạy Happy Path (Kỳ vọng check URL)
+    @Test(dataProvider = "smokeData", groups = {"smoke", "regression"}, description = "Test Happy Path")
+    public void testSmokeLogin(String username, String password, String expectedUrl, String description) {
+        System.out.println("Đang chạy: " + description);
         LoginPage loginPage = new LoginPage(getDriver());
+        InventoryPage inventoryPage = loginPage.login(username, password);
 
-        if (expected.equals("SUCCESS")) {
-            // Trường hợp đăng nhập thành công
-            InventoryPage inventoryPage = loginPage.login(username, password);
-            Assert.assertTrue(inventoryPage.isLoaded(), "Đăng nhập thành công nhưng không thấy trang Inventory");
-        } else {
-            // Trường hợp đăng nhập thất bại (sai pass, bị khóa...)
-            loginPage.loginExpectingFailure(username, password);
-            Assert.assertTrue(loginPage.isErrorDisplayed(), "Lỗi không hiển thị!");
-            Assert.assertTrue(loginPage.getErrorMessage().contains(expected),
-                    "Câu báo lỗi không khớp! Mong đợi: " + expected + ", Thực tế: " + loginPage.getErrorMessage());
-        }
+        Assert.assertTrue(inventoryPage.isLoaded(), "Trang Inventory chưa load thành công!");
+        Assert.assertEquals(getDriver().getCurrentUrl(), expectedUrl, "URL không khớp sau khi đăng nhập!");
+    }
+
+    // Test Case 2: Chạy Negative (Kỳ vọng check Error Message)
+    @Test(dataProvider = "negativeData", groups = {"regression"}, description = "Test Negative Cases")
+    public void testNegativeLogin(String username, String password, String expectedError, String description) {
+        System.out.println("Đang chạy: " + description);
+        LoginPage loginPage = new LoginPage(getDriver());
+        loginPage.loginExpectingFailure(username, password);
+
+        Assert.assertTrue(loginPage.isErrorDisplayed(), "Không hiển thị khung báo lỗi!");
+        Assert.assertTrue(loginPage.getErrorMessage().contains(expectedError),
+                "Lỗi thực tế: " + loginPage.getErrorMessage() + " | Mong đợi: " + expectedError);
+    }
+
+    // Test Case 3: Chạy Boundary (Kỳ vọng check Error Message)
+    @Test(dataProvider = "boundaryData", groups = {"regression"}, description = "Test Boundary Cases")
+    public void testBoundaryLogin(String username, String password, String expectedError, String description) {
+        System.out.println("Đang chạy: " + description);
+        LoginPage loginPage = new LoginPage(getDriver());
+        loginPage.loginExpectingFailure(username, password);
+
+        Assert.assertTrue(loginPage.isErrorDisplayed(), "Không hiển thị khung báo lỗi!");
+        Assert.assertTrue(loginPage.getErrorMessage().contains(expectedError),
+                "Lỗi thực tế: " + loginPage.getErrorMessage() + " | Mong đợi: " + expectedError);
     }
 }
