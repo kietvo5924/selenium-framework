@@ -34,8 +34,11 @@ jobs:
       # Thêm biến matrix.browser vào lệnh mvn [cite: 148-150]
       - name: Chạy Selenium Tests (${{ matrix.browser }})
         run: mvn clean test -Dbrowser=${{ matrix.browser }} -Denv=dev -DsuiteXmlFile=testng-smoke.xml
+        env:
+          APP_USERNAME: ${{ secrets.SAUCEDEMO_USERNAME }}
+          APP_PASSWORD: ${{ secrets.SAUCEDEMO_PASSWORD }}
         
-      # Tách riêng file báo cáo theo từng trình duyệt [cite: 155]
+      # Tách riêng file báo cáo theo từng trình duyệt
       - name: Lưu kết quả test
         if: always()
         uses: actions/upload-artifact@v4
