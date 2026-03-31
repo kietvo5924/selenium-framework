@@ -16,17 +16,27 @@ public abstract class BaseTest {
     @Parameters({"browser", "env"})
     @BeforeMethod(alwaysRun = true)
     public void setUp(@Optional("chrome") String browser, @Optional("dev") String env) {
-        // Đặt env làm System property để ConfigReader đọc đúng file [cite: 295, 296]
+        // Đặt env làm System property để ConfigReader đọc đúng file
         System.setProperty("env", env);
 
-        // Trong tài liệu ghi dùng DriverFactory, nhưng tôi tạm viết trực tiếp ChromeDriver
-        // ở đây để code có thể chạy ngay lập tức mà không báo lỗi [cite: 298]
-        WebDriverManager.chromedriver().setup();
-        WebDriver driver = new ChromeDriver();
+        // GitHub Actions tự đặt biến CI=true
+        boolean isCI = System.getenv("CI") != null;
 
-        driver.manage().window().maximize();
+        org.openqa.selenium.chrome.ChromeOptions options = new org.openqa.selenium.chrome.ChromeOptions();
+        if (isCI) {
+            options.addArguments("--headless=new");
+            options.addArguments("--no-sandbox");
+            options.addArguments("--disable-dev-shm-usage"); // Tránh lỗi OOM trên GitHub [cite: 98]
+            options.addArguments("--window-size=1920,1080");
+        } else {
+            options.addArguments("--start-maximized");
+        }
+
+        io.github.bonigarcia.wdm.WebDriverManager.chromedriver().setup();
+        WebDriver driver = new ChromeDriver(options);
+
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(5));
-        driver.get(ConfigReader.getInstance().getBaseUrl());
+        driver.get(framework.config.ConfigReader.getInstance().getBaseUrl());
 
         tlDriver.set(driver);
     }
