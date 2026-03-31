@@ -7,7 +7,7 @@ import org.testng.annotations.Test;
 public class FlakySimulationTest extends BaseTest {
     private static int callCount = 0;
 
-    @Test(description = "Test mô phỏng flaky fail 2 lần đầu, pass lần thứ 3")
+    @Test(enabled = false, description = "Test mô phỏng flaky fail 2 lần đầu, pass lần thứ 3")
     public void testFlakyScenario() {
         callCount++;
         System.out.println("[FlakyTest] Đang chạy lần thứ: " + callCount);
