@@ -9,9 +9,17 @@ on:
 jobs:
   run-tests:
     runs-on: ubuntu-latest
+    
+    # --- THÊM MATRIX TẠI ĐÂY ---
+    strategy:
+      matrix:
+        browser: [chrome, firefox] # Khai báo 2 luồng [cite: 143-144, 997]
+      fail-fast: false
+    # ---------------------------
+    
     defaults:
       run:
-        working-directory: ./Lab9_Theory_POM_DDT # Báo cho GitHub biết code nằm ở đây
+        working-directory: ./Lab9_Theory_POM_DDT
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -23,15 +31,16 @@ jobs:
           distribution: 'temurin'
           cache: maven
           
-      - name: Chạy Selenium Tests
-        run: mvn clean test -Dbrowser=chrome -Denv=dev -DsuiteXmlFile=testng-smoke.xml
+      # Thêm biến matrix.browser vào lệnh mvn [cite: 148-150]
+      - name: Chạy Selenium Tests (${{ matrix.browser }})
+        run: mvn clean test -Dbrowser=${{ matrix.browser }} -Denv=dev -DsuiteXmlFile=testng-smoke.xml
         
+      # Tách riêng file báo cáo theo từng trình duyệt [cite: 155]
       - name: Lưu kết quả test
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results
-          # Phải trỏ đúng vào thư mục con thì nó mới tìm thấy file
+          name: test-results-${{ matrix.browser }}
           path: |
             Lab9_Theory_POM_DDT/target/surefire-reports/
             Lab9_Theory_POM_DDT/target/screenshots/
