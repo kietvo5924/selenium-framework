@@ -13,27 +13,29 @@ public abstract class BaseTest {
 
     protected WebDriver getDriver() { return tlDriver.get(); }
 
-    @Parameters({"browser", "env"})
+   @Parameters({"browser", "env"})
     @BeforeMethod(alwaysRun = true)
     public void setUp(@Optional("chrome") String browser, @Optional("dev") String env) {
-        // Đặt env làm System property để ConfigReader đọc đúng file
+        // Đặt env làm System property để ConfigReader đọc đúng file [cite: 295, 296]
         System.setProperty("env", env);
 
-        // GitHub Actions tự đặt biến CI=true
-        boolean isCI = System.getenv("CI") != null;
-
+        // --- ĐOẠN CẤU HÌNH HEADLESS CHO GITHUB ACTIONS ---
+        boolean isCI = System.getenv("CI") != null; // GitHub tự gán biến CI=true
         org.openqa.selenium.chrome.ChromeOptions options = new org.openqa.selenium.chrome.ChromeOptions();
+        
         if (isCI) {
-            options.addArguments("--headless=new");
-            options.addArguments("--no-sandbox");
-            options.addArguments("--disable-dev-shm-usage"); // Tránh lỗi OOM trên GitHub [cite: 98]
+            options.addArguments("--headless=new"); // Chạy ngầm không cần màn hình
+            options.addArguments("--no-sandbox"); // Bắt buộc trên Linux
+            options.addArguments("--disable-dev-shm-usage"); // Tránh lỗi tràn RAM
             options.addArguments("--window-size=1920,1080");
         } else {
-            options.addArguments("--start-maximized");
+            options.addArguments("--start-maximized"); // Chạy local thì vẫn mở to màn hình
         }
+        // --------------------------------------------------
 
         io.github.bonigarcia.wdm.WebDriverManager.chromedriver().setup();
-        WebDriver driver = new ChromeDriver(options);
+        // Nhớ truyền 'options' vào trong ChromeDriver nhé
+        WebDriver driver = new ChromeDriver(options); 
 
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(5));
         driver.get(framework.config.ConfigReader.getInstance().getBaseUrl());
