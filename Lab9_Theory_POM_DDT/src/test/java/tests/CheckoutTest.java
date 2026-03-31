@@ -27,8 +27,11 @@ public class CheckoutTest extends BaseTest {
         System.out.println("=============================");
 
         // 2. Kịch bản thao tác trên web
+        String user = System.getenv("APP_USERNAME") != null ? System.getenv("APP_USERNAME") : "standard_user";
+        String pass = System.getenv("APP_PASSWORD") != null ? System.getenv("APP_PASSWORD") : "secret_sauce";
+
         LoginPage loginPage = new LoginPage(getDriver());
-        InventoryPage inventoryPage = loginPage.login("standard_user", "secret_sauce");
+        InventoryPage inventoryPage = loginPage.login(user, pass);
 
         inventoryPage.addFirstItemToCart();
         CartPage cartPage = inventoryPage.goToCart();
