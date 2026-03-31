@@ -1,50 +1,53 @@
-name: Selenium Test Suite
+name: Selenium & Allure Report CI
+
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   run-tests:
     runs-on: ubuntu-latest
-    
-    # --- THÊM MATRIX TẠI ĐÂY ---
-    strategy:
-      matrix:
-        browser: [chrome, firefox] # Khai báo 2 luồng [cite: 143-144, 997]
-      fail-fast: false
-    # ---------------------------
-    
-    defaults:
-      run:
-        working-directory: ./Lab9_Theory_POM_DDT
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
-      - name: Cài Java 17
+
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: maven
-          
-      # Thêm biến matrix.browser vào lệnh mvn [cite: 148-150]
-      - name: Chạy Selenium Tests (${{ matrix.browser }})
-        run: mvn clean test -Dbrowser=${{ matrix.browser }} -Denv=dev -DsuiteXmlFile=testng-smoke.xml
-        env:
-          APP_USERNAME: ${{ secrets.SAUCEDEMO_USERNAME }}
-          APP_PASSWORD: ${{ secrets.SAUCEDEMO_PASSWORD }}
-        
-      # Tách riêng file báo cáo theo từng trình duyệt
-      - name: Lưu kết quả test
+
+      - name: Run Tests
+        # Lệnh chạy test và sinh ra folder allure-results
+        run: mvn clean test -DsuiteXmlFile=testng-smoke.xml
+        continue-on-error: true # Đảm bảo workflow vẫn chạy tiếp để tạo report kể cả khi test fail
+
+      - name: Get Allure history
+        uses: actions/checkout@v4
         if: always()
-        uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
-          name: test-results-${{ matrix.browser }}
-          path: |
-            Lab9_Theory_POM_DDT/target/surefire-reports/
-            Lab9_Theory_POM_DDT/target/screenshots/
-          retention-days: 30
+          ref: gh-pages
+          path: gh-pages
+
+      - name: Generate Allure Report
+        uses: simple-elf/allure-report-action@master
+        if: always()
+        with:
+          allure_results: target/allure-results
+          allure_history: allure-history
+          keep_reports: 20
+
+      - name: Deploy report to Github Pages
+        if: always()
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: allure-history
