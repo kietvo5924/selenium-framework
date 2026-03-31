@@ -8,14 +8,18 @@ import org.testng.annotations.Test;
 
 public class LoginTest extends BaseTest {
 
-    @Test(description = "Kiểm tra đăng nhập thành công với tài khoản chuẩn")
+   @Test(description = "Kiểm tra đăng nhập thành công với tài khoản chuẩn")
     public void testLoginSuccess() {
         LoginPage loginPage = new LoginPage(getDriver());
 
-        // Gọi hàm login và tự động chuyển trang nhờ Fluent Interface
-        InventoryPage inventoryPage = loginPage.login("standard_user", "secret_sauce");
+        // --- ĐỌC TỪ KÉT SẮT ---
+        String user = System.getenv("APP_USERNAME") != null ? System.getenv("APP_USERNAME") : "standard_user";
+        String pass = System.getenv("APP_PASSWORD") != null ? System.getenv("APP_PASSWORD") : "secret_sauce";
+        // ----------------------
 
-        // Chỉ dùng Assert trong Test class, không để Assert trong Page Object
+        // Gọi hàm login với biến vừa đọc
+        InventoryPage inventoryPage = loginPage.login(user, pass);
+
         Assert.assertTrue(inventoryPage.isLoaded(), "Trang inventory chưa load, đăng nhập thất bại!");
     }
 
