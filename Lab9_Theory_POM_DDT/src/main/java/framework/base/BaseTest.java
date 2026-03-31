@@ -13,29 +13,39 @@ public abstract class BaseTest {
 
     protected WebDriver getDriver() { return tlDriver.get(); }
 
-   @Parameters({"browser", "env"})
+  @Parameters({"browser", "env"})
     @BeforeMethod(alwaysRun = true)
-    public void setUp(@Optional("chrome") String browser, @Optional("dev") String env) {
-        // Đặt env làm System property để ConfigReader đọc đúng file [cite: 295, 296]
+    public void setUp(@Optional("chrome") String xmlBrowser, @Optional("dev") String env) {
         System.setProperty("env", env);
-
-        // --- ĐOẠN CẤU HÌNH HEADLESS CHO GITHUB ACTIONS ---
-        boolean isCI = System.getenv("CI") != null; // GitHub tự gán biến CI=true
-        org.openqa.selenium.chrome.ChromeOptions options = new org.openqa.selenium.chrome.ChromeOptions();
         
-        if (isCI) {
-            options.addArguments("--headless=new"); // Chạy ngầm không cần màn hình
-            options.addArguments("--no-sandbox"); // Bắt buộc trên Linux
-            options.addArguments("--disable-dev-shm-usage"); // Tránh lỗi tràn RAM
-            options.addArguments("--window-size=1920,1080");
-        } else {
-            options.addArguments("--start-maximized"); // Chạy local thì vẫn mở to màn hình
-        }
-        // --------------------------------------------------
+        // Đọc biến browser từ GitHub Actions truyền vào (nếu không có thì mặc định dùng xmlBrowser)
+        String browser = System.getProperty("browser") != null ? System.getProperty("browser") : xmlBrowser;
+        boolean isCI = System.getenv("CI") != null; 
+        
+        WebDriver driver;
 
-        io.github.bonigarcia.wdm.WebDriverManager.chromedriver().setup();
-        // Nhớ truyền 'options' vào trong ChromeDriver nhé
-        WebDriver driver = new ChromeDriver(options); 
+        // --- BẮT ĐẦU CẤU HÌNH ĐA TRÌNH DUYỆT ---
+        if (browser.equalsIgnoreCase("firefox")) {
+            io.github.bonigarcia.wdm.WebDriverManager.firefoxdriver().setup();
+            org.openqa.selenium.firefox.FirefoxOptions firefoxOptions = new org.openqa.selenium.firefox.FirefoxOptions();
+            if (isCI) {
+                firefoxOptions.addArguments("-headless"); // Chạy ngầm cho Firefox [cite: 107, 165]
+            }
+            driver = new org.openqa.selenium.firefox.FirefoxDriver(firefoxOptions);
+        } else {
+            io.github.bonigarcia.wdm.WebDriverManager.chromedriver().setup();
+            org.openqa.selenium.chrome.ChromeOptions chromeOptions = new org.openqa.selenium.chrome.ChromeOptions();
+            if (isCI) {
+                chromeOptions.addArguments("--headless=new");
+                chromeOptions.addArguments("--no-sandbox");
+                chromeOptions.addArguments("--disable-dev-shm-usage");
+                chromeOptions.addArguments("--window-size=1920,1080");
+            } else {
+                chromeOptions.addArguments("--start-maximized");
+            }
+            driver = new org.openqa.selenium.chrome.ChromeDriver(chromeOptions);
+        }
+        // --- KẾT THÚC CẤU HÌNH ĐA TRÌNH DUYỆT ---
 
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(5));
         driver.get(framework.config.ConfigReader.getInstance().getBaseUrl());
